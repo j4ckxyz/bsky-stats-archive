@@ -41,17 +41,21 @@ def fetch_stats() -> dict:
 def ensure_archive_path(root: Path, dt: datetime) -> Path:
     archive_dir = root / "data" / dt.strftime("%Y") / dt.strftime("%m")
     archive_dir.mkdir(parents=True, exist_ok=True)
-    return archive_dir / f"{dt.strftime('%Y-%m-%d')}.json"
+    return archive_dir / f"{dt.strftime('%d')}.json"
 
 
 def find_previous_snapshot(root: Path, exclude_path: Path) -> Optional[Path]:
     data_root = root / "data"
     if not data_root.exists():
         return None
-    snapshots = sorted(data_root.rglob("*.json"))
-    snapshots = [p for p in snapshots if p != exclude_path]
+    snapshots = [p for p in data_root.rglob("*.json") if p != exclude_path]
     if not snapshots:
         return None
+    # Choose the most recently modified snapshot
+    try:
+        snapshots.sort(key=lambda p: p.stat().st_mtime)
+    except Exception:
+        snapshots.sort()  # fallback to lexical order
     return snapshots[-1]
 
 
