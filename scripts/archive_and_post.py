@@ -70,20 +70,22 @@ def human_rate(r: float) -> str:
     return f"{r:.4f}"
 
 
-def compute_deltas(current: dict, previous: Optional[dict]) -> Tuple[Optional[int], Optional[int], Optional[float]]:
+def compute_deltas(current: dict, previous: Optional[dict]) -> Tuple[Optional[int], Optional[int], Optional[int], Optional[float]]:
     if not previous:
-        return None, None, None
+        return None, None, None, None
     du = int(current.get("total_users", 0)) - int(previous.get("total_users", 0))
+    dp = int(current.get("total_posts", 0)) - int(previous.get("total_posts", 0))
     dl = int(current.get("total_likes", 0)) - int(previous.get("total_likes", 0))
     dr = float(current.get("users_growth_rate_per_second", 0.0)) - float(previous.get("users_growth_rate_per_second", 0.0))
-    return du, dl, dr
+    return du, dp, dl, dr
 
 
-def compose_post_text(now_utc: datetime, current: dict, deltas: Tuple[Optional[int], Optional[int], Optional[float]]) -> str:
-    du, dl, dr = deltas
+def compose_post_text(now_utc: datetime, current: dict, deltas: Tuple[Optional[int], Optional[int], Optional[int], Optional[float]]) -> str:
+    du, dp, dl, dr = deltas
     parts = []
     parts.append(f"Bluesky Daily Stats — {now_utc.strftime('%Y-%m-%d %H:%M')} UTC")
     parts.append(f"Users: {human_int(int(current['total_users']))}" + (f" (↑{human_int(du)})" if du is not None else ""))
+    parts.append(f"Posts: {human_int(int(current['total_posts']))}" + (f" (↑{human_int(dp)})" if dp is not None else ""))
     parts.append(f"Likes: {human_int(int(current['total_likes']))}" + (f" (↑{human_int(dl)})" if dl is not None else ""))
     parts.append(
         "Growth rate: "
@@ -91,7 +93,6 @@ def compose_post_text(now_utc: datetime, current: dict, deltas: Tuple[Optional[i
         + "/s"
         + (f" (Δ{human_rate(dr)}/s)" if dr is not None else "")
     )
-    parts.append("Source: https://bsky-stats.lut.li/")
     return "\n".join(parts)
 
 

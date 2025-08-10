@@ -5,7 +5,7 @@ Archiving Bluesky/ATProto stats from `https://bsky-stats.lut.li/` and posting a 
 ## What this does
 - Fetches JSON from `https://bsky-stats.lut.li/` every day at 06:00 UTC via GitHub Actions
 - Archives the full JSON to `data/YYYY/MM/YYYY-MM-DD.json`
-- Posts a summary (total users, total likes, growth rate per second, and deltas vs. previous archive) to Bluesky using the `atproto` Python library
+- Posts a summary (total users, total posts, total likes, growth rate per second, and deltas vs. previous archive) to Bluesky using the `atproto` Python library
 
 ## Repository structure
 - `scripts/archive_and_post.py`: main script to fetch, archive, compute deltas, and post
@@ -33,3 +33,12 @@ python scripts/archive_and_post.py
 ## Notes
 - Posting failures will not fail the workflow; archives are still saved and committed.
 - Data source: `https://bsky-stats.lut.li/`.
+
+## Example post content
+```
+Bluesky Daily Stats — 2025-08-10 06:20 UTC
+Users: 38,131,142 (↑X)
+Posts: 1,801,668,224 (↑P)
+Likes: 1,796,823,552 (↑Y)
+Growth rate: 0.1900/s (ΔZ/s)
+```
