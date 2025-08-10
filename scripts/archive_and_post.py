@@ -41,7 +41,8 @@ def fetch_stats() -> dict:
 def ensure_archive_path(root: Path, dt: datetime) -> Path:
     archive_dir = root / "data" / dt.strftime("%Y") / dt.strftime("%m")
     archive_dir.mkdir(parents=True, exist_ok=True)
-    return archive_dir / f"{dt.strftime('%d')}.json"
+    # Revert to YYYY-MM-DD.json for clarity when downloading individual files
+    return archive_dir / f"{dt.strftime('%Y-%m-%d')}.json"
 
 
 def find_previous_snapshot(root: Path, exclude_path: Path) -> Optional[Path]:
