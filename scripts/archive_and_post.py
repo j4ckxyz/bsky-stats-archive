@@ -3,7 +3,7 @@ import json
 import os
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -41,23 +41,43 @@ def fetch_stats() -> dict:
 def ensure_archive_path(root: Path, dt: datetime) -> Path:
     archive_dir = root / "data" / dt.strftime("%Y") / dt.strftime("%m")
     archive_dir.mkdir(parents=True, exist_ok=True)
-    # Revert to YYYY-MM-DD.json for clarity when downloading individual files
+    # Use YYYY-MM-DD.json for clarity when downloading individual files
     return archive_dir / f"{dt.strftime('%Y-%m-%d')}.json"
 
 
-def find_previous_snapshot(root: Path, exclude_path: Path) -> Optional[Path]:
+def parse_snapshot_date(path: Path) -> Optional[datetime]:
+    try:
+        # Expect filename like YYYY-MM-DD.json
+        stem = path.stem
+        return datetime.strptime(stem, "%Y-%m-%d")
+    except Exception:
+        return None
+
+
+def find_previous_snapshot(root: Path, now_dt: datetime) -> Optional[Path]:
     data_root = root / "data"
     if not data_root.exists():
         return None
-    snapshots = [p for p in data_root.rglob("*.json") if p != exclude_path]
-    if not snapshots:
+
+    # Prefer the previous calendar day
+    prev_date = (now_dt - timedelta(days=1)).date()
+    exact_prev = data_root / f"{prev_date.year:04d}" / f"{prev_date.month:02d}" / f"{prev_date.strftime('%Y-%m-%d')}.json"
+    if exact_prev.exists():
+        return exact_prev
+
+    # Otherwise, pick the latest snapshot strictly older than today
+    today_date = now_dt.date()
+    candidates: list[tuple[datetime, Path]] = []
+    for p in data_root.rglob("*.json"):
+        d = parse_snapshot_date(p)
+        if d is None:
+            continue
+        if d.date() < today_date:
+            candidates.append((d, p))
+    if not candidates:
         return None
-    # Choose the most recently modified snapshot
-    try:
-        snapshots.sort(key=lambda p: p.stat().st_mtime)
-    except Exception:
-        snapshots.sort()  # fallback to lexical order
-    return snapshots[-1]
+    candidates.sort(key=lambda x: x[0])
+    return candidates[-1][1]
 
 
 def load_json(path: Path) -> Optional[dict]:
@@ -126,7 +146,7 @@ def main() -> int:
         f.write("\n")
 
     # Previous snapshot for deltas
-    prev_path = find_previous_snapshot(repo_root, target_path)
+    prev_path = find_previous_snapshot(repo_root, now_utc)
     prev_stats = load_json(prev_path) if prev_path else None
 
     # Compose and post
